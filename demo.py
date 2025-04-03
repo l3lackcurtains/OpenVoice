@@ -2,9 +2,14 @@ import os
 import torch
 import time
 import functools
+import warnings
+from transformers.utils import logging
 from openvoice import se_extractor
 from openvoice.api import ToneColorConverter
 from melo.api import TTS
+
+# Disable transformer warnings
+logging.set_verbosity_error()
 
 class VoiceGenerator:
     def __init__(self):
@@ -14,9 +19,11 @@ class VoiceGenerator:
         os.makedirs(self.output_dir, exist_ok=True)
 
         # Initialize models
-        self.tone_color_converter = ToneColorConverter('checkpoints_v2/converter/config.json', device=self.device)
-        self.tone_color_converter.load_ckpt('checkpoints_v2/converter/checkpoint.pth')
-        self.model = TTS(language='EN', device=self.device)
+        with warnings.catch_warnings():
+            warnings.filterwarnings("ignore", category=UserWarning)
+            self.tone_color_converter = ToneColorConverter('checkpoints_v2/converter/config.json', device=self.device)
+            self.tone_color_converter.load_ckpt('checkpoints_v2/converter/checkpoint.pth')
+            self.model = TTS(language='EN', device=self.device)
 
         # Compile models if PyTorch >= 2.0
         if hasattr(torch, 'compile'):
@@ -68,7 +75,7 @@ def main():
     generator = VoiceGenerator()
     
     # Example usage
-    text = "Hey man, i know you better than that girl.. all the people in the world."
+    text = "In the year 2194, Earth had gone eerily silent, its once vibrant transmissions reduced to a blanket of static across the stars. From her isolated moonbase orbiting Europa, Lira Sol sent out daily pings into the void, a ritual of hope more than protocol. Then, one evening, through the crackle of cosmic noise, a voice emerged—faint, metallic, yet unmistakably human: “Lira… this is Kairo. I’m on Mars. You’re not alone.” Her heart pounded, but something about the voice felt off—too smooth, too precise, as if it weren’t entirely real."
     output_path = generator.generate_speech(text)
     print(f"Generated speech saved to: {output_path}")
 
