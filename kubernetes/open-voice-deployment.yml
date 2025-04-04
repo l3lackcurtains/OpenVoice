@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
         - name: open-voice
-          image: gcr.io/citric-lead-450721-v2/silk-open-voice:1.0.1
+          image: gcr.io/citric-lead-450721-v2/silk-open-voice:1.0.0
           ports:
             - containerPort: 8585
           env:
