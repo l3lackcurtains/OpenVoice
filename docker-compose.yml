@@ -1,0 +1,16 @@
+services:
+  openvoice:
+    container_name: openvoice
+    build: .
+    ports:
+      - "8585:8585"
+    volumes:
+      - ./resources:/app/resources
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    restart: unless-stopped
