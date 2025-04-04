@@ -1,39 +1,26 @@
 import os
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
-from flask import Flask, request, jsonify, Response, send_file
+from flask import Flask, request, send_file
 import time
 import torch
 from generator import VoiceGenerator
 import concurrent.futures
-from functools import lru_cache
-import shutil
+import tempfile
 from werkzeug.utils import secure_filename
 import glob
-from pydub import AudioSegment
-import tempfile
+from helpers import (
+    UPLOAD_FOLDER, 
+    ALLOWED_EXTENSIONS, 
+    MINIMUM_AUDIO_LENGTH,
+    allowed_file,
+    convert_to_mp3,
+    check_audio_length,
+    get_cached_reference_speaker,
+    make_response
+)
 
 app = Flask(__name__)
-
-# Configure upload settings
-UPLOAD_FOLDER = 'resources'
-ALLOWED_EXTENSIONS = {'mp3', 'wav'}
-MINIMUM_AUDIO_LENGTH = 30  # minimum length in seconds
-os.makedirs(UPLOAD_FOLDER, exist_ok=True)
-
-def allowed_file(filename):
-    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
-
-def convert_to_mp3(input_path, output_path):
-    """Convert any audio file to MP3 format"""
-    audio = AudioSegment.from_file(input_path)
-    audio.export(output_path, format='mp3', bitrate='192k')
-
-def check_audio_length(file_path):
-    """Check if audio file meets minimum length requirement"""
-    audio = AudioSegment.from_file(file_path)
-    duration_seconds = len(audio) / 1000  # Convert milliseconds to seconds
-    return duration_seconds >= MINIMUM_AUDIO_LENGTH
 
 # Create a single thread pool executor with optimal number of workers
 executor = concurrent.futures.ThreadPoolExecutor(
@@ -42,22 +29,6 @@ executor = concurrent.futures.ThreadPoolExecutor(
 
 # Initialize generator once at startup
 generator = VoiceGenerator()
-
-# Cache reference speaker embeddings
-@lru_cache(maxsize=32)
-def get_cached_reference_speaker(reference_name):
-    return f"resources/{reference_name}.mp3"
-
-def make_response(status="ok", data=None, error=None, http_code=200):
-    response = {
-        "status": status,
-        "timestamp": time.time()
-    }
-    if data is not None:
-        response["data"] = data
-    if error is not None:
-        response["error"] = error
-    return jsonify(response), http_code
 
 @app.route('/generate-audio', methods=['POST'])
 def generate_speech_endpoint():
