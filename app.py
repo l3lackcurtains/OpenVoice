@@ -2,28 +2,26 @@ import os
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
 from flask import Flask, request, jsonify, Response, send_file
-from io import BytesIO
 import time
-
 import torch
 from generator import VoiceGenerator
-import threading
-from queue import Queue
 import concurrent.futures
-import soundfile as sf
+from functools import lru_cache
 
 app = Flask(__name__)
-request_queue = Queue()
-thread_lock = threading.Lock()
 
-try:
-    generator = VoiceGenerator()
-except RuntimeError as e:
-    print(f"Failed to initialize VoiceGenerator: {e}")
-    generator = None
+# Create a single thread pool executor with optimal number of workers
+executor = concurrent.futures.ThreadPoolExecutor(
+    max_workers=min(4, (os.cpu_count() or 1))
+)
 
-# Create a thread pool executor
-executor = concurrent.futures.ThreadPoolExecutor(max_workers=3)
+# Initialize generator once at startup
+generator = VoiceGenerator()
+
+# Cache reference speaker embeddings
+@lru_cache(maxsize=32)
+def get_cached_reference_speaker(reference_name):
+    return f"resources/{reference_name}.mp3"
 
 def make_response(status="ok", data=None, error=None, http_code=200):
     response = {
@@ -36,44 +34,40 @@ def make_response(status="ok", data=None, error=None, http_code=200):
         response["error"] = error
     return jsonify(response), http_code
 
-def generate_speech_task(text, reference_speaker, speed):
-    with thread_lock:
-        return generator.generate_speech(text, reference_speaker, speed)
-
 @app.route('/generate-audio', methods=['POST'])
 def generate_speech_endpoint():
     try:
         start_time = time.time()
-        print("Processing generate_speech request")
         
+        # Parse request data outside the task
         data = request.get_json()
         text = data.get('text')
         reference_name = data.get('reference_speaker')
         speed = float(data.get('speed', 1.0))
         
-        if not text:
+        if not text or not reference_name:
             return make_response(
                 status="error",
-                error="'text' is required",
-                http_code=400
-            )
-            
-        if not reference_name:
-            return make_response(
-                status="error",
-                error="'reference_speaker' is required",
+                error="'text' and 'reference_speaker' are required",
                 http_code=400
             )
 
-        reference_speaker = f"resources/{reference_name}.mp3"
-        generation_start = time.time()
+        # Get cached reference speaker path
+        reference_speaker = get_cached_reference_speaker(reference_name)
         
-        # Get the output path from the generator
-        future = executor.submit(generate_speech_task, text, reference_speaker, speed)
-        output_path = future.result()  # This should return the output file path
+        # Submit task to thread pool
+        future = executor.submit(
+            generator.generate_speech,
+            text, 
+            reference_speaker,
+            speed
+        )
         
-        generation_time = time.time() - generation_start
-        print(f"Total request processing time: {time.time() - start_time:.2f} seconds")
+        # Set timeout to prevent hanging requests
+        output_path = future.result(timeout=10)
+        
+        generation_time = time.time() - start_time
+        print(f"Total request processing time: {generation_time:.2f} seconds")
 
         return send_file(
             output_path,
@@ -82,6 +76,12 @@ def generate_speech_endpoint():
             download_name=f'generated_speech_{int(time.time())}.wav'
         )
 
+    except concurrent.futures.TimeoutError:
+        return make_response(
+            status="error",
+            error="Request timed out",
+            http_code=504
+        )
     except Exception as e:
         print(f"Error in generate_speech: {e}")
         return make_response(
@@ -159,4 +159,5 @@ def index():
     return make_response(status="ok", data=api_docs)
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=8585, debug=False, threaded=True)
+    # Use Gunicorn for production
+    app.run(host='0.0.0.0', port=8585, debug=False)
