@@ -1,6 +1,5 @@
 import os
 import torch
-import time
 import warnings
 from transformers.utils import logging
 from openvoice import se_extractor
@@ -73,8 +72,6 @@ class VoiceGenerator:
 
     @torch.inference_mode()
     def generate_speech(self, text: str, reference_speaker: str, speed: float = 1.0) -> str:
-        start_time = time.time()
-        
         # Get cached source embedding or compute new one
         if reference_speaker not in self.source_se_cache:
             try:
@@ -90,12 +87,9 @@ class VoiceGenerator:
         target_se = self.source_se_cache[reference_speaker]
         
         # TTS generation
-        tts_start = time.time()
         self.model.tts_to_file(text, speaker_id=0, output_path=self.temp_path, speed=speed)
-        print(f"TTS generation: {time.time() - tts_start:.2f}s")
         
         # Voice conversion
-        vc_start = time.time()
         self.tone_color_converter.convert(
             audio_src_path=self.temp_path,
             src_se=self.source_se,
@@ -103,9 +97,7 @@ class VoiceGenerator:
             output_path=self.output_path,
             message="@MyShell"
         )
-        print(f"Voice conversion: {time.time() - vc_start:.2f}s")
         
-        print(f"Total speech generation: {time.time() - start_time:.2f}s")
         return self.output_path
 
 # def main():

@@ -65,12 +65,16 @@ def generate_speech_endpoint():
         generation_time = time.time() - start_time
         print(f"Total request processing time: {generation_time:.2f} seconds")
 
-        return send_file(
+        response = send_file(
             output_path,
             mimetype='audio/wav',
             as_attachment=True,
             download_name=f'generated_speech_{int(time.time())}.wav'
         )
+        
+        # Add generation time to response headers
+        response.headers['X-Generation-Time'] = f"{generation_time:.2f}"
+        return response
 
     except concurrent.futures.TimeoutError:
         return make_response(
