@@ -13,7 +13,6 @@ ENV PATH=${CUDA_HOME}/bin:${PATH}
 ENV LD_LIBRARY_PATH=${CUDA_HOME}/lib64:${LD_LIBRARY_PATH}
 ENV NVIDIA_VISIBLE_DEVICES=all
 ENV NVIDIA_DRIVER_CAPABILITIES=compute,utility
-ENV DOCKER_BUILD=1
 ENV TORCH_CUDA_ARCH_LIST="7.0;7.5;8.0;8.6"
 
 COPY . .
@@ -25,14 +24,11 @@ RUN pip3 install --upgrade pip && \
     python3 -m unidic download && \
     pip3 install -r requirements.txt
 
-# Verify CUDA during build (will skip device-specific checks)
-RUN python3 verify_cuda.py
+
+RUN bash ./setup_cuda.sh
 
 RUN python3 download.py
 
 EXPOSE 8585
-
-# Unset build flag for runtime
-ENV DOCKER_BUILD=0
 
 CMD ["python3", "app.py"]
