@@ -24,11 +24,11 @@ spec:
             limits:
               nvidia.com/gpu: 1
               cpu: "8"
-              memory: "64Gi"  # Increased memory limit
+              memory: "32Gi"
             requests:
               nvidia.com/gpu: 1
               cpu: "4"
-              memory: "48Gi"  # Increased memory request
+              memory: "30Gi"
       tolerations:
         - key: nvidia.com/gpu
           operator: Exists
