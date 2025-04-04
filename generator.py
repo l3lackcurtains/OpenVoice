@@ -101,15 +101,15 @@ class VoiceGenerator:
         
         return self.output_path
 
-def main():
-    """Main function demonstrating the usage of VoiceGenerator."""
-    generator = VoiceGenerator()
+# def main():
+#     """Main function demonstrating the usage of VoiceGenerator."""
+#     generator = VoiceGenerator()
     
-    sample_text = "In the year 2194, Earth had gone eerily silent, its once vibrant transmissions reduced to a blanket of static across the stars. From her isolated moonbase orbiting Europa, Lira Sol sent out daily pings into the void, a ritual of hope more than protocol. Then, one evening, through the crackle of cosmic noise, a voice emerged-faint, metallic, yet unmistakably human: 'Lira... this is Kairo. I'm on Mars. You're not alone.' Her heart pounded, but something about the voice felt off-too smooth, too precise, as if it weren't entirely real."
-    reference_speaker = "resources/example_reference.mp3"
+#     sample_text = "In the year 2194, Earth had gone eerily silent, its once vibrant transmissions reduced to a blanket of static across the stars. From her isolated moonbase orbiting Europa, Lira Sol sent out daily pings into the void, a ritual of hope more than protocol. Then, one evening, through the crackle of cosmic noise, a voice emerged-faint, metallic, yet unmistakably human: 'Lira... this is Kairo. I'm on Mars. You're not alone.' Her heart pounded, but something about the voice felt off-too smooth, too precise, as if it weren't entirely real."
+#     reference_speaker = "resources/example_reference.mp3"
     
-    output_path = generator.generate_speech(sample_text, reference_speaker)
-    print(f"Generated speech saved to: {output_path}")
+#     output_path = generator.generate_speech(sample_text, reference_speaker)
+#     print(f"Generated speech saved to: {output_path}")
 
-if __name__ == "__main__":
-    main()
+# if __name__ == "__main__":
+#     main()
