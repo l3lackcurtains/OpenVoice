@@ -1,0 +1,47 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: open-voice-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: open-voice
+  template:
+    metadata:
+      labels:
+        app: open-voice
+    spec:
+      containers:
+        - name: open-voice
+          image: gcr.io/citric-lead-450721-v2/silk-open-voice:1.0.1
+          ports:
+            - containerPort: 8585
+          env:
+            - name: PYTORCH_CUDA_ALLOC_CONF
+              value: "max_split_size_mb:512"
+          resources:
+            limits:
+              nvidia.com/gpu: 1
+              cpu: "8"
+              memory: "64Gi"  # Increased memory limit
+            requests:
+              nvidia.com/gpu: 1
+              cpu: "4"
+              memory: "48Gi"  # Increased memory request
+      tolerations:
+        - key: nvidia.com/gpu
+          operator: Exists
+          effect: NoSchedule
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: open-voice-service
+spec:
+  selector:
+    app: open-voice
+  ports:
+    - port: 8585
+      targetPort: 8585
+  type: NodePort
