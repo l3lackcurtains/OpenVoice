@@ -22,11 +22,11 @@ spec:
               value: "max_split_size_mb:512"
           resources:
             limits:
-              nvidia.com/gpu: 1
+              nvidia.com/gpu: "1"
               cpu: "8"
               memory: "32Gi"
             requests:
-              nvidia.com/gpu: 1
+              nvidia.com/gpu: "1"
               cpu: "4"
               memory: "30Gi"
       tolerations:
@@ -44,4 +44,4 @@ spec:
   ports:
     - port: 8585
       targetPort: 8585
-  type: NodePort
+  type: LoadBalancer

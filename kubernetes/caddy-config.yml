@@ -1,9 +1,0 @@
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: open-voice-caddy-config
-data:
-  Caddyfile: |
-    :8585 {
-        reverse_proxy open-voice-service:8585
-    }
